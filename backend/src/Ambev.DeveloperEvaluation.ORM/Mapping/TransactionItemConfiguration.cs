@@ -35,20 +35,17 @@ public class TransactionItemConfiguration : IEntityTypeConfiguration<Transaction
             .IsRequired()
             .HasDefaultValue(false);
 
-        // Foreign Keys
         builder.Property(ti => ti.ProductId)
             .IsRequired();
 
         builder.Property(ti => ti.TransactionId)
             .IsRequired();
 
-        // Relationships
         builder.HasOne(ti => ti.Product)
             .WithMany()
             .HasForeignKey(ti => ti.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Indexes
         builder.HasIndex(ti => ti.ProductId)
             .HasDatabaseName("IX_TransactionItems_ProductId");
 

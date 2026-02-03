@@ -1,4 +1,3 @@
-using Ambev.DeveloperEvaluation.Application.Sales.CancelSaleItem;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Transactions.CancelTransactionItem;
