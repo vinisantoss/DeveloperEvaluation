@@ -1,9 +1,10 @@
+using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Ambev.DeveloperEvaluation.Domain.Entities;
-using Ambev.DeveloperEvaluation.Domain.Repositories;
-using Ambev.DeveloperEvaluation.Domain.Events;
 
 namespace Ambev.DeveloperEvaluation.Application.Transactions.CreateCommercialTransaction;
 
@@ -41,6 +42,12 @@ public class CreateCommercialTransactionHandler : IRequestHandler<CreateCommerci
     public async Task<CreateCommercialTransactionResult> Handle(CreateCommercialTransactionCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Creating commercial transaction with code {TransactionCode}", request.TransactionCode);
+
+        var validator = new CreateCommercialTransactionCommandValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
 
         var existingTransaction = await _transactionRepository.GetByTransactionCodeAsync(request.TransactionCode, cancellationToken);
         if (existingTransaction is not null)
@@ -88,13 +95,6 @@ public class CreateCommercialTransactionHandler : IRequestHandler<CreateCommerci
 
             var lastItem = transaction.Items.Last();
             lastItem.Product = product;
-        }
-
-        var validationResult = transaction.Validate();
-        if (!validationResult.IsValid)
-        {
-            var errors = string.Join(", ", validationResult.Errors.Select(e => e.Detail));
-            throw new InvalidOperationException($"Transaction validation failed: {errors}");
         }
 
         var createdTransaction = await _transactionRepository.CreateAsync(transaction, cancellationToken);

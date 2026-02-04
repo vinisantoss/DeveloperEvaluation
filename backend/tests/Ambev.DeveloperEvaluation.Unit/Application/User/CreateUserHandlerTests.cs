@@ -1,14 +1,14 @@
 using Ambev.DeveloperEvaluation.Application.Users.CreateUser;
 using Ambev.DeveloperEvaluation.Common.Security;
-using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Unit.Domain;
+using DomainUser = Ambev.DeveloperEvaluation.Domain.Entities.User;
 using AutoMapper;
 using FluentAssertions;
 using NSubstitute;
 using Xunit;
 
-namespace Ambev.DeveloperEvaluation.Unit.Application;
+namespace Ambev.DeveloperEvaluation.Unit.Application.User;
 
 /// <summary>
 /// Contains unit tests for the <see cref="CreateUserHandler"/> class.
@@ -40,7 +40,7 @@ public class CreateUserHandlerTests
     {
         // Given
         var command = CreateUserHandlerTestData.GenerateValidCommand();
-        var user = new User
+        var user = new DomainUser
         {
             Id = Guid.NewGuid(),
             Username = command.Username,
@@ -57,10 +57,10 @@ public class CreateUserHandlerTests
         };
 
 
-        _mapper.Map<User>(command).Returns(user);
+        _mapper.Map<DomainUser>(command).Returns(user);
         _mapper.Map<CreateUserResult>(user).Returns(result);
 
-        _userRepository.CreateAsync(Arg.Any<User>(), Arg.Any<CancellationToken>())
+        _userRepository.CreateAsync(Arg.Any<DomainUser>(), Arg.Any<CancellationToken>())
             .Returns(user);
         _passwordHasher.HashPassword(Arg.Any<string>()).Returns("hashedPassword");
 
@@ -70,7 +70,7 @@ public class CreateUserHandlerTests
         // Then
         createUserResult.Should().NotBeNull();
         createUserResult.Id.Should().Be(user.Id);
-        await _userRepository.Received(1).CreateAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+        await _userRepository.Received(1).CreateAsync(Arg.Any<DomainUser>(), Arg.Any<CancellationToken>());
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ public class CreateUserHandlerTests
         var command = CreateUserHandlerTestData.GenerateValidCommand();
         var originalPassword = command.Password;
         const string hashedPassword = "h@shedPassw0rd";
-        var user = new User
+        var user = new DomainUser
         {
             Id = Guid.NewGuid(),
             Username = command.Username,
@@ -110,8 +110,8 @@ public class CreateUserHandlerTests
             Role = command.Role
         };
 
-        _mapper.Map<User>(command).Returns(user);
-        _userRepository.CreateAsync(Arg.Any<User>(), Arg.Any<CancellationToken>())
+        _mapper.Map<DomainUser>(command).Returns(user);
+        _userRepository.CreateAsync(Arg.Any<DomainUser>(), Arg.Any<CancellationToken>())
             .Returns(user);
         _passwordHasher.HashPassword(originalPassword).Returns(hashedPassword);
 
@@ -121,7 +121,7 @@ public class CreateUserHandlerTests
         // Then
         _passwordHasher.Received(1).HashPassword(originalPassword);
         await _userRepository.Received(1).CreateAsync(
-            Arg.Is<User>(u => u.Password == hashedPassword),
+            Arg.Is<DomainUser>(u => u.Password == hashedPassword),
             Arg.Any<CancellationToken>());
     }
 
@@ -133,7 +133,7 @@ public class CreateUserHandlerTests
     {
         // Given
         var command = CreateUserHandlerTestData.GenerateValidCommand();
-        var user = new User
+        var user = new DomainUser
         {
             Id = Guid.NewGuid(),
             Username = command.Username,
@@ -144,8 +144,8 @@ public class CreateUserHandlerTests
             Role = command.Role
         };
 
-        _mapper.Map<User>(command).Returns(user);
-        _userRepository.CreateAsync(Arg.Any<User>(), Arg.Any<CancellationToken>())
+        _mapper.Map<DomainUser>(command).Returns(user);
+        _userRepository.CreateAsync(Arg.Any<DomainUser>(), Arg.Any<CancellationToken>())
             .Returns(user);
         _passwordHasher.HashPassword(Arg.Any<string>()).Returns("hashedPassword");
 
@@ -153,7 +153,7 @@ public class CreateUserHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Then
-        _mapper.Received(1).Map<User>(Arg.Is<CreateUserCommand>(c =>
+        _mapper.Received(1).Map<DomainUser>(Arg.Is<CreateUserCommand>(c =>
             c.Username == command.Username &&
             c.Email == command.Email &&
             c.Phone == command.Phone &&

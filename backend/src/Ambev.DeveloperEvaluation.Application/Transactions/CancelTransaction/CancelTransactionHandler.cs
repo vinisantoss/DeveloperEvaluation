@@ -1,8 +1,9 @@
+using Ambev.DeveloperEvaluation.Domain.Events;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Ambev.DeveloperEvaluation.Domain.Repositories;
-using Ambev.DeveloperEvaluation.Domain.Events;
 
 namespace Ambev.DeveloperEvaluation.Application.Transactions.CancelTransaction;
 
@@ -41,6 +42,13 @@ public class CancelTransactionHandler : IRequestHandler<CancelTransactionCommand
     {
         _logger.LogInformation("Cancelling commercial transaction with ID {TransactionId}", request.Id);
 
+        var validator = new CancelTransactionCommandValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
+
         var transaction = await _transactionRepository.GetByIdAsync(request.Id, cancellationToken);
         if (transaction is null)
         {
@@ -59,13 +67,6 @@ public class CancelTransactionHandler : IRequestHandler<CancelTransactionCommand
 
         _logger.LogInformation("Commercial transaction cancelled successfully with ID {TransactionId}", updatedTransaction.Id);
 
-        return new CancelTransactionResult
-        {
-            Id = updatedTransaction.Id,
-            TransactionCode = updatedTransaction.TransactionCode,
-            Status = updatedTransaction.Status.ToString(),
-            UpdatedAt = updatedTransaction.UpdatedAt,
-            Message = $"Transaction {updatedTransaction.TransactionCode} has been successfully cancelled"
-        };
+        return _mapper.Map<CancelTransactionResult>(updatedTransaction);
     }
 }

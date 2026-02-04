@@ -1,7 +1,11 @@
+using Ambev.DeveloperEvaluation.Application.Transactions.CancelTransactionItem;
+using Ambev.DeveloperEvaluation.Application.Users.CreateUser;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Ambev.DeveloperEvaluation.Domain.Repositories;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Ambev.DeveloperEvaluation.Application.Transactions.GetTransaction;
 
@@ -39,6 +43,12 @@ public class GetTransactionHandler : IRequestHandler<GetTransactionCommand, GetT
     public async Task<GetTransactionResult> Handle(GetTransactionCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Retrieving commercial transaction with ID {TransactionId}", request.Id);
+
+        var validator = new GetTransactionCommandValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
 
         var transaction = await _transactionRepository.GetByIdAsync(request.Id, cancellationToken);
         if (transaction == null)

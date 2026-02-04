@@ -1,7 +1,8 @@
+using FluentValidation;
+using Ambev.DeveloperEvaluation.Domain.Events;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Ambev.DeveloperEvaluation.Domain.Repositories;
-using Ambev.DeveloperEvaluation.Domain.Events;
 
 namespace Ambev.DeveloperEvaluation.Application.Transactions.CancelTransactionItem;
 
@@ -36,6 +37,13 @@ public class CancelTransactionItemHandler : IRequestHandler<CancelTransactionIte
     {
         _logger.LogInformation("Cancelling item {ItemId} from transaction {TransactionId}", request.ItemId, request.TransactionId);
 
+        var validator = new CancelTransactionItemCommandValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            throw new ValidationException(validationResult.Errors);
+        }
+
         var transaction = await _transactionRepository.GetByIdAsync(request.TransactionId, cancellationToken);
         if (transaction is null)
         {
@@ -43,7 +51,7 @@ public class CancelTransactionItemHandler : IRequestHandler<CancelTransactionIte
         }
 
         var item = transaction.Items.FirstOrDefault(i => i.Id == request.ItemId);
-        if (item == null)
+        if (item is null)
         {
             throw new InvalidOperationException($"Item with ID {request.ItemId} not found in transaction {request.TransactionId}");
         }

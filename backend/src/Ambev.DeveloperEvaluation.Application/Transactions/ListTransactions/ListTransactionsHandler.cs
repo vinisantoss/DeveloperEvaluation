@@ -1,7 +1,9 @@
+using Ambev.DeveloperEvaluation.Application.Transactions.CancelTransactionItem;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Ambev.DeveloperEvaluation.Domain.Repositories;
 
 namespace Ambev.DeveloperEvaluation.Application.Transactions.ListTransactions;
 
@@ -40,15 +42,34 @@ public class ListTransactionsHandler : IRequestHandler<ListTransactionsCommand, 
     {
         _logger.LogInformation("Retrieving transactions list - Page: {Page}, Size: {Size}", request.Page, request.Size);
 
+        var validator = new ListTransactionsCommandValidator();
+        var validationResult = await validator.ValidateAsync(request, cancellationToken);
+
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
+
         var transactions = await _transactionRepository.GetAllAsync(request.Page, request.Size, cancellationToken);
         var transactionsList = transactions.ToList();
 
         var totalCount = transactionsList.Count;
         var totalPages = (int)Math.Ceiling((double)totalCount / request.Size);
 
+        var transactionItems = transactionsList.Select(t => new TransactionListItem
+        {
+            Id = t.Id,
+            TransactionCode = t.TransactionCode,
+            TransactionDate = t.TransactionDate,
+            BusinessPartnerName = t.BusinessPartner?.Name ?? string.Empty,
+            OperationalUnitName = t.OperationalUnit?.Name ?? string.Empty,
+            GrandTotal = t.Amount,
+            Status = t.Status.ToString(),
+            ItemCount = t.Items.Count(i => !i.IsCancelled),
+            CreatedAt = t.CreatedAt
+        }).ToList();
+
         var result = new ListTransactionsResult
         {
-            Transactions = _mapper.Map<List<TransactionListItem>>(transactionsList),
+            Transactions = transactionItems,
             CurrentPage = request.Page,
             PageSize = request.Size,
             TotalCount = totalCount,
