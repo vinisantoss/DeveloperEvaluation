@@ -1,4 +1,5 @@
 ﻿using Ambev.DeveloperEvaluation.Domain.Transaction.Validation;
+using Ambev.DeveloperEvaluation.Unit.Application.Transactions.Common;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using FluentValidation.TestHelper;
 using Xunit;

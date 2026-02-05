@@ -2,7 +2,7 @@
 using Ambev.DeveloperEvaluation.Domain.Enums;
 using Bogus;
 
-namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
+namespace Ambev.DeveloperEvaluation.Unit.Application.Transactions.Common;
 
 /// <summary>
 /// Provides methods for generating test data for CommercialTransaction using the Bogus library.

@@ -1,4 +1,5 @@
 ﻿using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Unit.Application.Transactions.Common;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using Xunit;
 

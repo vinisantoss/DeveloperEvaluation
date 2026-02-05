@@ -1,4 +1,5 @@
 ﻿using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Unit.Application.Transactions.Common;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using Xunit;
 
@@ -55,7 +56,7 @@ public class TransactionItemTests
 
         // Act
         item.CalculateDiscount();
-        item.CalculateItemTotal(); // Need to call this separately
+        item.CalculateItemTotal(); 
 
         // Assert
         Assert.Equal(20m, item.DiscountPercentage);
@@ -81,7 +82,7 @@ public class TransactionItemTests
 
         // Act
         item.CalculateDiscount();
-        item.CalculateItemTotal(); // Need to call this separately
+        item.CalculateItemTotal(); 
 
         // Assert
         Assert.Equal(0m, item.DiscountPercentage);
@@ -179,7 +180,7 @@ public class TransactionItemTests
             Quantity = 25, // Invalid: above 20
             ItemPrice = 10m,
             IsCancelled = false,
-            DiscountPercentage = 0m // This will cause validation error due to discount rules
+            DiscountPercentage = 0m 
         };
         item.ProductId = item.Product.Id;
 
@@ -205,7 +206,7 @@ public class TransactionItemTests
             Quantity = 5,
             ItemPrice = -10m, // Invalid: negative
             IsCancelled = false,
-            DiscountPercentage = 10m // Correct discount for 5 items
+            DiscountPercentage = 10m 
         };
         item.ProductId = item.Product.Id;
 
@@ -314,7 +315,7 @@ public class TransactionItemTests
         Assert.Equal(quantity, item.Quantity);
         Assert.Equal(itemPrice, item.ItemPrice);
         Assert.Equal(10m, item.DiscountPercentage); // 5 items = 10% discount
-        Assert.Equal(450m, item.ItemTotal); // 5 * 100 * 0.9
+        Assert.Equal(450m, item.ItemTotal);
         Assert.False(item.IsCancelled);
     }
 
@@ -333,7 +334,7 @@ public class TransactionItemTests
         // Assert
         Assert.Equal(8, item.Quantity);
         Assert.Equal(10m, item.DiscountPercentage); // 8 items = 10% discount
-        Assert.Equal(720m, item.ItemTotal); // 8 * 100 * 0.9
+        Assert.Equal(720m, item.ItemTotal);
     }
 
     /// <summary>

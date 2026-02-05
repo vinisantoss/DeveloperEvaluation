@@ -3,6 +3,7 @@ using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using FluentValidation.TestHelper;
 using Xunit;
+using Ambev.DeveloperEvaluation.Unit.Application.Transactions.Common;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Validation;
 

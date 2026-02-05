@@ -1,6 +1,7 @@
 ﻿using Ambev.DeveloperEvaluation.Application.Transactions.GetTransaction;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
+using Ambev.DeveloperEvaluation.Unit.Application.Transactions.Common;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;

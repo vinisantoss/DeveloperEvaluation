@@ -1,8 +1,7 @@
 ﻿using Ambev.DeveloperEvaluation.Application.Transactions.CancelTransactionItem;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
-using Ambev.DeveloperEvaluation.Unit.Application.Transactions.CancelTransaction;
-using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
+using Ambev.DeveloperEvaluation.Unit.Application.Transactions.Common;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -22,7 +21,7 @@ public class CancelTransactionItemHandlerTests
     public CancelTransactionItemHandlerTests()
     {
         _transactionRepository = Substitute.For<ICommercialTransactionRepository>();
-        _logger = _logger = Substitute.For<ILogger<CancelTransactionItemHandler>>();
+        _logger = Substitute.For<ILogger<CancelTransactionItemHandler>>();
         _handler = new CancelTransactionItemHandler(_transactionRepository, _logger);
     }
 
@@ -41,7 +40,8 @@ public class CancelTransactionItemHandlerTests
         itemToCancel.Id = command.ItemId;
         var originalGrandTotal = transaction.Amount;
 
-        _transactionRepository.GetByIdAsync(command.TransactionId, Arg.Any<CancellationToken>())
+        // Configure the correct repository method
+        _transactionRepository.GetByIdWithDetailsAsync(command.TransactionId, Arg.Any<CancellationToken>())
             .Returns(transaction);
         _transactionRepository.UpdateAsync(Arg.Any<CommercialTransaction>(), Arg.Any<CancellationToken>())
             .Returns(transaction);
@@ -57,50 +57,53 @@ public class CancelTransactionItemHandlerTests
     }
 
     /// <summary>
-    /// Tests that cancelling a non-existent transaction throws NotFoundException.
+    /// Tests that cancelling a non-existent transaction throws InvalidOperationException.
     /// </summary>
-    [Fact(DisplayName = "Given non-existent transaction When cancelling item Then throws NotFoundException")]
-    public async Task Handle_NonExistentTransaction_ThrowsNotFoundException()
+    [Fact(DisplayName = "Given non-existent transaction When cancelling item Then throws InvalidOperationException")]
+    public async Task Handle_NonExistentTransaction_ThrowsInvalidOperationException()
     {
         // Given
         var command = CancelTransactionItemHandlerTestData.GenerateValidCommand();
 
-        _transactionRepository.GetByIdAsync(command.TransactionId, Arg.Any<CancellationToken>())
+        _transactionRepository.GetByIdWithDetailsAsync(command.TransactionId, Arg.Any<CancellationToken>())
             .Returns((CommercialTransaction?)null);
 
         // When
         var act = () => _handler.Handle(command, CancellationToken.None);
 
         // Then
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage($"Commercial transaction with ID {command.TransactionId} not found");
     }
 
     /// <summary>
-    /// Tests that cancelling a non-existent item throws NotFoundException.
+    /// Tests that cancelling a non-existent item throws InvalidOperationException.
     /// </summary>
-    [Fact(DisplayName = "Given non-existent item When cancelling Then throws NotFoundException")]
-    public async Task Handle_NonExistentItem_ThrowsNotFoundException()
+    [Fact(DisplayName = "Given non-existent item When cancelling Then throws InvalidOperationException")]
+    public async Task Handle_NonExistentItem_ThrowsInvalidOperationException()
     {
         // Given
         var command = CancelTransactionItemHandlerTestData.GenerateValidCommand();
         var transaction = CommercialTransactionTestData.GenerateValidTransaction();
-        transaction.Items = new List<TransactionItem>();
+        transaction.Id = command.TransactionId;
+        transaction.Items = new List<TransactionItem>(); // Empty items list
 
-        _transactionRepository.GetByIdAsync(command.TransactionId, Arg.Any<CancellationToken>())
+        _transactionRepository.GetByIdWithDetailsAsync(command.TransactionId, Arg.Any<CancellationToken>())
             .Returns(transaction);
 
         // When
         var act = () => _handler.Handle(command, CancellationToken.None);
 
         // Then
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage($"Item with ID {command.ItemId} not found in transaction {command.TransactionId}");
     }
 
     /// <summary>
-    /// Tests that cancelling an already cancelled item throws InvalidOperationException.
+    /// Tests that cancelling an already cancelled item throws DomainException.
     /// </summary>
-    [Fact(DisplayName = "Given already cancelled item When cancelling Then throws InvalidOperationException")]
-    public async Task Handle_AlreadyCancelledItem_ThrowsInvalidOperationException()
+    [Fact(DisplayName = "Given already cancelled item When cancelling Then throws DomainException")]
+    public async Task Handle_AlreadyCancelledItem_ThrowsDomainException()
     {
         // Given
         var command = CancelTransactionItemHandlerTestData.GenerateValidCommand();
@@ -109,9 +112,9 @@ public class CancelTransactionItemHandlerTests
 
         var itemToCancel = transaction.Items.First();
         itemToCancel.Id = command.ItemId;
-        itemToCancel.IsCancelled = true;
+        itemToCancel.IsCancelled = true; // Already cancelled
 
-        _transactionRepository.GetByIdAsync(command.TransactionId, Arg.Any<CancellationToken>())
+        _transactionRepository.GetByIdWithDetailsAsync(command.TransactionId, Arg.Any<CancellationToken>())
             .Returns(transaction);
 
         // When
@@ -128,14 +131,8 @@ public class CancelTransactionItemHandlerTests
     [Fact(DisplayName = "Given empty IDs When cancelling item Then throws validation exception")]
     public async Task Handle_EmptyIds_ThrowsValidationException()
     {
-       
         // Given
-        var command = CancelTransactionItemHandlerTestData.GenerateValidCommand();
-        var transaction = CommercialTransactionTestData.GenerateCancelledTransaction();
-        command.TransactionId = Guid.Empty;
-
-        _transactionRepository.GetByIdAsync(command.TransactionId, Arg.Any<CancellationToken>())
-            .Returns(transaction);
+        var command = new CancelTransactionItemCommand(Guid.Empty, Guid.Empty);
 
         // When
         var act = () => _handler.Handle(command, CancellationToken.None);
@@ -152,7 +149,7 @@ public class CancelTransactionItemHandlerTests
     {
         // Given
         var command = CancelTransactionItemHandlerTestData.GenerateValidCommand();
-        var transaction = CommercialTransactionTestData.GenerateValidTransaction();
+        var transaction = CommercialTransactionTestData.GenerateTransactionForCalculationTest();
         transaction.Id = command.TransactionId;
 
         var itemToCancel = transaction.Items.First();
@@ -160,7 +157,7 @@ public class CancelTransactionItemHandlerTests
         var itemTotal = itemToCancel.ItemTotal;
         var originalGrandTotal = transaction.Amount;
 
-        _transactionRepository.GetByIdAsync(command.TransactionId, Arg.Any<CancellationToken>())
+        _transactionRepository.GetByIdWithDetailsAsync(command.TransactionId, Arg.Any<CancellationToken>())
             .Returns(transaction);
         _transactionRepository.UpdateAsync(Arg.Any<CommercialTransaction>(), Arg.Any<CancellationToken>())
             .Returns(transaction);
@@ -170,5 +167,62 @@ public class CancelTransactionItemHandlerTests
 
         // Then
         transaction.Amount.Should().Be(originalGrandTotal - itemTotal);
+    }
+
+    /// <summary>
+    /// Tests that cancelling item from cancelled transaction throws DomainException.
+    /// </summary>
+    [Fact(DisplayName = "Given cancelled transaction When cancelling item Then throws DomainException")]
+    public async Task Handle_CancelledTransaction_ThrowsDomainException()
+    {
+        // Given
+        var command = CancelTransactionItemHandlerTestData.GenerateValidCommand();
+        var transaction = CommercialTransactionTestData.GenerateCancelledTransaction();
+        transaction.Id = command.TransactionId;
+
+        var itemToCancel = transaction.Items.First();
+        itemToCancel.Id = command.ItemId;
+
+        _transactionRepository.GetByIdWithDetailsAsync(command.TransactionId, Arg.Any<CancellationToken>())
+            .Returns(transaction);
+
+        // When
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Then
+        await act.Should().ThrowAsync<DomainException>()
+            .WithMessage("*cancelled transaction*");
+    }
+
+    /// <summary>
+    /// Tests that successful cancellation returns correct result.
+    /// </summary>
+    [Fact(DisplayName = "Given valid cancellation When processing Then returns correct result")]
+    public async Task Handle_ValidCancellation_ReturnsCorrectResult()
+    {
+        // Given
+        var command = CancelTransactionItemHandlerTestData.GenerateValidCommand();
+        var transaction = CommercialTransactionTestData.GenerateTransactionForCalculationTest();
+        transaction.Id = command.TransactionId;
+
+        var itemToCancel = transaction.Items.First();
+        itemToCancel.Id = command.ItemId;
+
+        _transactionRepository.GetByIdWithDetailsAsync(command.TransactionId, Arg.Any<CancellationToken>())
+            .Returns(transaction);
+        _transactionRepository.UpdateAsync(Arg.Any<CommercialTransaction>(), Arg.Any<CancellationToken>())
+            .Returns(transaction);
+
+        // When
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Then
+        result.Should().NotBeNull();
+        result.TransactionId.Should().Be(transaction.Id);
+        result.ItemId.Should().Be(command.ItemId);
+        result.TransactionCode.Should().Be(transaction.TransactionCode);
+        result.UpdatedGrandTotal.Should().Be(transaction.Amount);
+        result.Message.Should().Contain(command.ItemId.ToString());
+        result.Message.Should().Contain(transaction.TransactionCode);
     }
 }

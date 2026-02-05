@@ -1,7 +1,6 @@
 ﻿using Ambev.DeveloperEvaluation.Application.Transactions.CancelTransactionItem;
 using Bogus;
 
-
 namespace Ambev.DeveloperEvaluation.Unit.Application.Transactions.CancelTransactionItem;
 
 /// <summary>
@@ -10,27 +9,45 @@ namespace Ambev.DeveloperEvaluation.Unit.Application.Transactions.CancelTransact
 public static class CancelTransactionItemHandlerTestData
 {
     /// <summary>
-    /// Configures the Faker to generate valid CancelTransactionItemCommand.
-    /// </summary>
-    private static readonly Faker<CancelTransactionItemCommand> CommandFaker = new Faker<CancelTransactionItemCommand>()
-       .CustomInstantiator(f => new CancelTransactionItemCommand(
-           f.Random.Guid(), // TransactionId
-           f.Random.Guid()  // ItemId
-       ));
-
-    /// <summary>
     /// Generates a valid CancelTransactionItemCommand.
     /// </summary>
     public static CancelTransactionItemCommand GenerateValidCommand()
     {
-        return CommandFaker.Generate();
+        return new CancelTransactionItemCommand(
+            Guid.NewGuid(), // TransactionId
+            Guid.NewGuid()  // ItemId
+        );
     }
 
     /// <summary>
-    /// Generates a command with empty IDs.
+    /// Generates a command with specific IDs for controlled testing.
+    /// </summary>
+    public static CancelTransactionItemCommand GenerateCommandWithIds(Guid transactionId, Guid itemId)
+    {
+        return new CancelTransactionItemCommand(transactionId, itemId);
+    }
+
+    /// <summary>
+    /// Generates a command with empty IDs for validation testing.
     /// </summary>
     public static CancelTransactionItemCommand GenerateInvalidCommand()
     {
         return new CancelTransactionItemCommand(Guid.Empty, Guid.Empty);
+    }
+
+    /// <summary>
+    /// Generates a command with empty transaction ID.
+    /// </summary>
+    public static CancelTransactionItemCommand GenerateCommandWithEmptyTransactionId()
+    {
+        return new CancelTransactionItemCommand(Guid.Empty, Guid.NewGuid());
+    }
+
+    /// <summary>
+    /// Generates a command with empty item ID.
+    /// </summary>
+    public static CancelTransactionItemCommand GenerateCommandWithEmptyItemId()
+    {
+        return new CancelTransactionItemCommand(Guid.NewGuid(), Guid.Empty);
     }
 }
