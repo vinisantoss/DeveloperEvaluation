@@ -1,4 +1,8 @@
-﻿using Ambev.DeveloperEvaluation.Application.Transactions.ListTransactions;
+﻿using Ambev.DeveloperEvaluation.Application.Transactions.CreateCommercialTransaction;
+using Ambev.DeveloperEvaluation.Application.Transactions.GetTransaction;
+using Ambev.DeveloperEvaluation.Application.Transactions.ListTransactions;
+using Ambev.DeveloperEvaluation.WebApi.Features.Transactions.Common;
+using Ambev.DeveloperEvaluation.WebApi.Features.Transactions.CreateCommercialTransaction;
 using AutoMapper;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Transactions.ListCommercialTransactions;
@@ -15,5 +19,9 @@ public sealed class ListTransactionsProfile : Profile
     {
         CreateMap<ListTransactionsRequest, ListTransactionsCommand>()
             .ConstructUsing(src => new ListTransactionsCommand(src.Page, src.Size));
+
+        CreateMap<ListTransactionsResult, ListTransactionsResponse>();
+        CreateMap<TransactionListItem, TransactionSummary>();
+
     }
 }

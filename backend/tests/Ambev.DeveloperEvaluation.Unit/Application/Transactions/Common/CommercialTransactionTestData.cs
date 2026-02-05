@@ -286,4 +286,141 @@ public static class CommercialTransactionTestData
     {
         return new Faker().Random.Decimal(-10, 0);
     }
+
+    /// <summary>
+    /// Generates a transaction with controlled data for calculation testing.
+    /// </summary>
+    public static CommercialTransaction GenerateTransactionForCalculationTest()
+    {
+        var transaction = new CommercialTransaction
+        {
+            Id = Guid.NewGuid(),
+            TransactionCode = "CALC001",
+            TransactionDate = DateTime.UtcNow,
+            Status = TransactionStatus.Active,
+            BusinessPartner = GenerateValidBusinessPartner(),
+            OperationalUnit = GenerateValidOperationalUnit(),
+            CreatedAt = DateTime.UtcNow,
+            Items = new List<TransactionItem>()
+        };
+
+        // Set IDs
+        transaction.BusinessPartnerId = transaction.BusinessPartner.Id;
+        transaction.OperationalUnitId = transaction.OperationalUnit.Id;
+
+        // Add controlled items
+        var item1 = new TransactionItem
+        {
+            Id = Guid.NewGuid(),
+            Product = GenerateValidProduct(),
+            Quantity = 2,
+            ItemPrice = 50m,
+            IsCancelled = false,
+            TransactionId = transaction.Id,
+            DiscountPercentage = 0m
+        };
+        item1.ProductId = item1.Product.Id;
+        item1.ItemTotal = item1.Quantity * item1.ItemPrice;
+
+        var item2 = new TransactionItem
+        {
+            Id = Guid.NewGuid(),
+            Product = GenerateValidProduct(),
+            Quantity = 1,
+            ItemPrice = 30m,
+            IsCancelled = false,
+            TransactionId = transaction.Id,
+            DiscountPercentage = 0m
+        };
+        item2.ProductId = item2.Product.Id;
+        item2.ItemTotal = item2.Quantity * item2.ItemPrice;
+
+        transaction.Items.Add(item1);
+        transaction.Items.Add(item2);
+        transaction.Amount = transaction.Items.Sum(i => i.ItemTotal);
+
+        return transaction;
+    }
+
+    /// <summary>
+    /// Generates a controlled TransactionItem for testing specific scenarios.
+    /// </summary>
+    public static TransactionItem GenerateControlledTransactionItem(int quantity, decimal price)
+    {
+        var product = GenerateValidProduct();
+        var item = new TransactionItem
+        {
+            Id = Guid.NewGuid(),
+            Product = product,
+            ProductId = product.Id,
+            Quantity = quantity,
+            ItemPrice = price,
+            IsCancelled = false,
+            DiscountPercentage = quantity switch
+            {
+                < 4 => 0m,
+                >= 4 and < 10 => 10m,
+                >= 10 and <= 20 => 20m,
+                _ => 0m
+            }
+        };
+
+        item.ItemTotal = item.Quantity * item.ItemPrice * (1 - item.DiscountPercentage / 100);
+        return item;
+    }
+
+    /// <summary>
+    /// Generates a transaction with cancelled items.
+    /// </summary>
+    public static CommercialTransaction GenerateTransactionWithCancelledItems()
+    {
+        var transaction = new CommercialTransaction
+        {
+            Id = Guid.NewGuid(),
+            TransactionCode = "CANCEL001",
+            TransactionDate = DateTime.UtcNow,
+            Status = TransactionStatus.Active,
+            BusinessPartner = GenerateValidBusinessPartner(),
+            OperationalUnit = GenerateValidOperationalUnit(),
+            CreatedAt = DateTime.UtcNow,
+            Items = new List<TransactionItem>()
+        };
+
+        transaction.BusinessPartnerId = transaction.BusinessPartner.Id;
+        transaction.OperationalUnitId = transaction.OperationalUnit.Id;
+
+        // Active item
+        var activeItem = new TransactionItem
+        {
+            Id = Guid.NewGuid(),
+            Product = GenerateValidProduct(),
+            Quantity = 2,
+            ItemPrice = 50m,
+            IsCancelled = false,
+            TransactionId = transaction.Id,
+            DiscountPercentage = 0m
+        };
+        activeItem.ProductId = activeItem.Product.Id;
+        activeItem.ItemTotal = activeItem.Quantity * activeItem.ItemPrice;
+
+        // Cancelled item
+        var cancelledItem = new TransactionItem
+        {
+            Id = Guid.NewGuid(),
+            Product = GenerateValidProduct(),
+            Quantity = 1,
+            ItemPrice = 30m,
+            IsCancelled = true,
+            TransactionId = transaction.Id,
+            DiscountPercentage = 0m
+        };
+        cancelledItem.ProductId = cancelledItem.Product.Id;
+        cancelledItem.ItemTotal = 0m; // Cancelled items don't contribute to total
+
+        transaction.Items.Add(activeItem);
+        transaction.Items.Add(cancelledItem);
+        transaction.Amount = transaction.Items.Where(i => !i.IsCancelled).Sum(i => i.ItemTotal);
+
+        return transaction;
+    }
 }

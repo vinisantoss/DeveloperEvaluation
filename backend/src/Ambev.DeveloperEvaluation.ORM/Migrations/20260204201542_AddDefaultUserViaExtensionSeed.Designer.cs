@@ -3,6 +3,7 @@ using System;
 using Ambev.DeveloperEvaluation.ORM;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ambev.DeveloperEvaluation.ORM.Migrations
 {
     [DbContext(typeof(DefaultContext))]
-    partial class DefaultContextModelSnapshot : ModelSnapshot
+    [Migration("20260204201542_AddDefaultUserViaExtensionSeed")]
+    partial class AddDefaultUserViaExtensionSeed
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -56,24 +59,6 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                         .HasDatabaseName("IX_BusinessPartners_ExternalId");
 
                     b.ToTable("BusinessPartners", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("93a85a69-d565-44d4-a3ca-3eff3034da19"),
-                            Document = "12.345.678/0001-90",
-                            Email = "contato@distribuidoraspaulo.com.br",
-                            ExternalId = "BP-001",
-                            Name = "Distribuidora São Paulo"
-                        },
-                        new
-                        {
-                            Id = new Guid("d1f057cd-b6e4-4913-a60e-76d8ba0e8bb5"),
-                            Document = "98.765.432/0001-21",
-                            Email = "vendas@distribuidorario.com.br",
-                            ExternalId = "BP-002",
-                            Name = "Distribuidora Rio de Janeiro"
-                        });
                 });
 
             modelBuilder.Entity("Ambev.DeveloperEvaluation.Domain.Entities.CommercialTransaction", b =>
@@ -158,22 +143,6 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                         .HasDatabaseName("IX_OperationalUnits_ExternalId");
 
                     b.ToTable("OperationalUnits", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("78faca33-ddb5-4de6-81ad-458171371dfe"),
-                            ExternalId = "OU-SP-001",
-                            Location = "Avenida Paulista, 1000 - São Paulo, SP",
-                            Name = "Cervejaria São Paulo"
-                        },
-                        new
-                        {
-                            Id = new Guid("661d37dc-ec33-47c7-8c50-d93cc70d97a1"),
-                            ExternalId = "OU-RJ-001",
-                            Location = "Rua da Lapa, 50 - Rio de Janeiro, RJ",
-                            Name = "Cervejaria Rio de Janeiro"
-                        });
                 });
 
             modelBuilder.Entity("Ambev.DeveloperEvaluation.Domain.Entities.Product", b =>
@@ -208,48 +177,6 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                         .HasDatabaseName("IX_Products_ExternalId");
 
                     b.ToTable("Products", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("70c65fab-a341-4592-b48c-f51864a7eac5"),
-                            Category = "Cerveja",
-                            ExternalId = "P-BRAHMA-001",
-                            Name = "Brahma Chopp 600ml",
-                            StandardPrice = 5.50m
-                        },
-                        new
-                        {
-                            Id = new Guid("61203461-022c-4ba3-8083-a83831c63e8e"),
-                            Category = "Cerveja",
-                            ExternalId = "P-SKOL-002",
-                            Name = "Skol Pilsen 350ml",
-                            StandardPrice = 3.00m
-                        },
-                        new
-                        {
-                            Id = new Guid("c5c46972-84fa-4fca-ae9d-cb81e626c8ae"),
-                            Category = "Refrigerante",
-                            ExternalId = "P-GUARANA-003",
-                            Name = "Guaraná Antarctica 2L",
-                            StandardPrice = 7.00m
-                        },
-                        new
-                        {
-                            Id = new Guid("e909ec36-4db0-4df0-8bb4-02f9a09b9680"),
-                            Category = "Refrigerante",
-                            ExternalId = "P-H2OH-004",
-                            Name = "H2OH! Limão 500ml",
-                            StandardPrice = 4.50m
-                        },
-                        new
-                        {
-                            Id = new Guid("adec37cd-827a-4a6c-895c-01d1d1d435ef"),
-                            Category = "Água",
-                            ExternalId = "P-AMA-005",
-                            Name = "Água AMA 1,5L",
-                            StandardPrice = 2.00m
-                        });
                 });
 
             modelBuilder.Entity("Ambev.DeveloperEvaluation.Domain.Entities.TransactionItem", b =>
@@ -344,7 +271,7 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                         new
                         {
                             Id = new Guid("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"),
-                            CreatedAt = new DateTime(2026, 2, 4, 20, 22, 8, 356, DateTimeKind.Utc).AddTicks(7487),
+                            CreatedAt = new DateTime(2026, 2, 4, 20, 15, 37, 79, DateTimeKind.Utc).AddTicks(1356),
                             Email = "dev.admin@ambev.com",
                             Password = "$2a$11$ffL71qrWZMo1NezZ4KiunO190phLmiNoGDUpYFMZi99GpcDZJGunG",
                             Phone = "+5511987654321",

@@ -1,9 +1,6 @@
-﻿using Ambev.DeveloperEvaluation.Application.Transactions.CancelTransaction;
-using Ambev.DeveloperEvaluation.Application.Transactions.CancelTransactionItem;
-using Ambev.DeveloperEvaluation.Application.Transactions.CreateCommercialTransaction;
+﻿using Ambev.DeveloperEvaluation.Application.Transactions.CreateCommercialTransaction;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
-using Ambev.DeveloperEvaluation.Unit.Application.Transactions.CreateCommercialTransaction;
 using AutoMapper;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -37,12 +34,12 @@ public class CreateCommercialTransactionHandlerTests
     public async Task Handle_ValidRequest_ReturnsSuccessResponse()
     {
         // Given
-        var command = CreateCommercialTransactionHandlerTestData.GenerateValidCommand();
+        var command = CreateCommercialTransactionHandlerTestData.GenerateSimpleValidCommand();
         var transaction = new CommercialTransaction
         {
             Id = Guid.NewGuid(),
             TransactionCode = command.TransactionCode,
-            Amount = 100m
+            Amount = 10.00m // 1 item * 10.00
         };
 
         var result = new CreateCommercialTransactionResult
@@ -66,6 +63,7 @@ public class CreateCommercialTransactionHandlerTests
         createResult.TransactionCode.Should().Be(transaction.TransactionCode);
         await _transactionRepository.Received(1).CreateAsync(Arg.Any<CommercialTransaction>(), Arg.Any<CancellationToken>());
     }
+
 
     /// <summary>
     /// Tests that an invalid transaction creation request throws a validation exception.
@@ -96,7 +94,8 @@ public class CreateCommercialTransactionHandlerTests
         var act = () => _handler.Handle(command, CancellationToken.None);
 
         // Then
-        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>()
+            .WithMessage("*Cannot sell more than 20 identical items*");
     }
 
     /// <summary>
@@ -106,19 +105,85 @@ public class CreateCommercialTransactionHandlerTests
     public async Task Handle_TransactionWithItems_CalculatesGrandTotalCorrectly()
     {
         // Given
-        var command = CreateCommercialTransactionHandlerTestData.GenerateValidCommand();
-        var transaction = new CommercialTransaction();
+        var command = CreateCommercialTransactionHandlerTestData.GenerateCommandForGrandTotalTest();
+        var expectedGrandTotal = 110.00m;
+
+        var transaction = new CommercialTransaction
+        {
+            Id = Guid.NewGuid(),
+            TransactionCode = command.TransactionCode,
+            Amount = expectedGrandTotal
+        };
+
+        var result = new CreateCommercialTransactionResult
+        {
+            Id = transaction.Id,
+            TransactionCode = transaction.TransactionCode,
+            GrandTotal = expectedGrandTotal
+        };
 
         _mapper.Map<CommercialTransaction>(command).Returns(transaction);
         _transactionRepository.CreateAsync(Arg.Any<CommercialTransaction>(), Arg.Any<CancellationToken>())
             .Returns(transaction);
+        _mapper.Map<CreateCommercialTransactionResult>(transaction).Returns(result);
 
         // When
-        await _handler.Handle(command, CancellationToken.None);
+        var createResult = await _handler.Handle(command, CancellationToken.None);
 
         // Then
+        createResult.Should().NotBeNull();
+        createResult.GrandTotal.Should().Be(expectedGrandTotal);
         await _transactionRepository.Received(1).CreateAsync(
-            Arg.Is<CommercialTransaction>(t => t.Amount > 0),
-            Arg.Any<CancellationToken>());
+        Arg.Any<CommercialTransaction>(),
+        Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Tests that transaction with exactly 20 items is valid.
+    /// </summary>
+    [Fact(DisplayName = "Given transaction with exactly 20 items When creating Then should succeed")]
+    public async Task Handle_TransactionWithExactly20Items_ShouldSucceed()
+    {
+        // Given
+        var command = CreateCommercialTransactionHandlerTestData.GenerateValidCommand();
+        command.Items.Clear();
+        command.Items.Add(new TransactionItemInfo
+        {
+            Product = new CommercialProductInfo
+            {
+                ExternalId = "PROD001",
+                Name = "Test Product",
+                Category = "Test Category",
+                StandardPrice = 10.00m
+            },
+            Quantity = 20, // Exactly 20 - should be valid
+            ItemPrice = 10.00m
+        });
+
+        var transaction = new CommercialTransaction
+        {
+            Id = Guid.NewGuid(),
+            TransactionCode = command.TransactionCode,
+            Amount = 200m
+        };
+
+        var result = new CreateCommercialTransactionResult
+        {
+            Id = transaction.Id,
+            TransactionCode = transaction.TransactionCode,
+            GrandTotal = 200m
+        };
+
+        _mapper.Map<CommercialTransaction>(command).Returns(transaction);
+        _transactionRepository.CreateAsync(Arg.Any<CommercialTransaction>(), Arg.Any<CancellationToken>())
+            .Returns(transaction);
+        _mapper.Map<CreateCommercialTransactionResult>(transaction).Returns(result);
+
+        // When
+        var createResult = await _handler.Handle(command, CancellationToken.None);
+
+        // Then
+        createResult.Should().NotBeNull();
+        createResult.GrandTotal.Should().Be(200m);
     }
 }

@@ -70,6 +70,7 @@ public class ListTransactionsHandlerTests
         result.TotalPages.Should().Be(1);
     }
 
+
     /// <summary>
     /// Tests that validation fails for invalid pagination parameters.
     /// </summary>

@@ -44,7 +44,7 @@ public class CancelTransactionItemHandler : IRequestHandler<CancelTransactionIte
             throw new ValidationException(validationResult.Errors);
         }
 
-        var transaction = await _transactionRepository.GetByIdAsync(request.TransactionId, cancellationToken);
+        var transaction = await _transactionRepository.GetByIdWithDetailsAsync(request.TransactionId, cancellationToken);
         if (transaction is null)
         {
             throw new InvalidOperationException($"Commercial transaction with ID {request.TransactionId} not found");

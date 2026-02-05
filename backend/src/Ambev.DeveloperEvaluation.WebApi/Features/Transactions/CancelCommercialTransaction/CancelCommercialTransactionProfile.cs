@@ -1,5 +1,6 @@
-﻿using AutoMapper;
-using Ambev.DeveloperEvaluation.Application.Transactions.CancelTransaction;
+﻿using Ambev.DeveloperEvaluation.Application.Transactions.CancelTransaction;
+using Ambev.DeveloperEvaluation.Domain.Entities;
+using AutoMapper;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Transactions.CancelCommercialTransaction;
 
@@ -15,5 +16,7 @@ public sealed class CancelTransactionProfile : Profile
     {
         CreateMap<Guid, CancelTransactionCommand>()
             .ConstructUsing(id => new CancelTransactionCommand(id));
+
+        CreateMap<CommercialTransaction, CancelTransactionResult>();
     }
 }

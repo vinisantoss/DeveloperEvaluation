@@ -14,6 +14,9 @@ namespace Ambev.DeveloperEvaluation.Application.Transactions.CreateCommercialTra
 public class CreateCommercialTransactionHandler : IRequestHandler<CreateCommercialTransactionCommand, CreateCommercialTransactionResult>
 {
     private readonly ICommercialTransactionRepository _transactionRepository;
+    private readonly IProductRepository _productRepository; 
+    private readonly IBusinessPartnerRepository _businessPartnerRepository; 
+    private readonly IOperationalUnitRepository _operationalUnitRepository; 
     private readonly IMapper _mapper;
     private readonly ILogger<CreateCommercialTransactionHandler> _logger;
 
@@ -21,14 +24,23 @@ public class CreateCommercialTransactionHandler : IRequestHandler<CreateCommerci
     /// Initializes a new instance of CreateCommercialTransactionHandler
     /// </summary>
     /// <param name="transactionRepository">The transaction repository</param>
+    /// <param name="productRepository">The product repository</param>
+    /// <param name="businessPartnerRepository">The business partner repository</param>
+    /// <param name="operationalUnitRepository">The operational unit repository</param>
     /// <param name="mapper">The AutoMapper instance</param>
     /// <param name="logger">The logger</param>
     public CreateCommercialTransactionHandler(
         ICommercialTransactionRepository transactionRepository,
+        IProductRepository productRepository,
+        IBusinessPartnerRepository businessPartnerRepository,
+        IOperationalUnitRepository operationalUnitRepository,
         IMapper mapper,
         ILogger<CreateCommercialTransactionHandler> logger)
     {
         _transactionRepository = transactionRepository;
+        _productRepository = productRepository;
+        _businessPartnerRepository = businessPartnerRepository;
+        _operationalUnitRepository = operationalUnitRepository;
         _mapper = mapper;
         _logger = logger;
     }
@@ -55,41 +67,35 @@ public class CreateCommercialTransactionHandler : IRequestHandler<CreateCommerci
             throw new InvalidOperationException($"Transaction with code {request.TransactionCode} already exists");
         }
 
-
-        var businessPartner = new BusinessPartner
+        var businessPartner = await _businessPartnerRepository.GetByExternalIdAsync(request.BusinessPartner.ExternalId, cancellationToken);
+        if (businessPartner is null)
         {
-            ExternalId = request.BusinessPartner.ExternalId,
-            Name = request.BusinessPartner.Name,
-            Email = request.BusinessPartner.Email,
-            Document = request.BusinessPartner.Document
-        };
+            throw new DomainException($"Business Partner with ExternalId '{request.BusinessPartner.ExternalId}' does not exists.");
+        }
 
-        var operationalUnit = new OperationalUnit
+        var operationalUnit = await _operationalUnitRepository.GetByExternalIdAsync(request.OperationalUnit.ExternalId, cancellationToken);
+        if (operationalUnit is null)
         {
-            ExternalId = request.OperationalUnit.ExternalId,
-            Name = request.OperationalUnit.Name,
-            Location = request.OperationalUnit.Location
-        };
+            throw new DomainException($"Operational Unit with ExternalId '{request.OperationalUnit.ExternalId}' does not exists.");
+        }
 
         var transaction = new CommercialTransaction
         {
             TransactionCode = request.TransactionCode,
-            BusinessPartnerId = businessPartner.Id,
-            BusinessPartner = businessPartner,
-            OperationalUnitId = operationalUnit.Id,
-            OperationalUnit = operationalUnit
+            BusinessPartnerId = businessPartner.Id, 
+            BusinessPartner = businessPartner,     
+            OperationalUnitId = operationalUnit.Id, 
+            OperationalUnit = operationalUnit,     
+            TransactionDate = DateTime.UtcNow
         };
-
 
         foreach (var itemInfo in request.Items)
         {
-            var product = new Product
+            var product = await _productRepository.GetByExternalIdAsync(itemInfo.Product.ExternalId, cancellationToken);
+            if (product == null)
             {
-                ExternalId = itemInfo.Product.ExternalId,
-                Name = itemInfo.Product.Name,
-                Category = itemInfo.Product.Category,
-                StandardPrice = itemInfo.Product.StandardPrice
-            };
+                throw new DomainException($"Produto com ExternalId '{itemInfo.Product.ExternalId}' não encontrado.");
+            }
 
             transaction.AddItem(product.Id, itemInfo.Quantity, itemInfo.ItemPrice);
 

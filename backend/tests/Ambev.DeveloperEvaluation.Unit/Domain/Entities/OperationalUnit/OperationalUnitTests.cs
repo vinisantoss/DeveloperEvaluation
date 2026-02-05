@@ -13,44 +13,24 @@ public class OperationalUnitTests
     /// Tests that validation passes when all operational unit properties are valid.
     /// </summary>
     [Fact(DisplayName = "Validation should pass for valid operational unit data")]
-    public async Task Given_ValidOperationalUnitData_When_Validated_Then_ShouldReturnValid()
+    public void Given_ValidOperationalUnitData_When_Validated_Then_ShouldReturnValid()
     {
         // Arrange
         var operationalUnit = CommercialTransactionTestData.GenerateValidOperationalUnit();
 
         // Act
-        var result = await operationalUnit.ValidateAsync();
+        var result = operationalUnit.Validate();
 
         // Assert
-        Assert.Empty(result);
+        Assert.True(result.IsValid);
+        Assert.Empty(result.Errors);
     }
 
     /// <summary>
     /// Tests that validation fails when operational unit properties are invalid.
     /// </summary>
     [Fact(DisplayName = "Validation should fail for invalid operational unit data")]
-    public async Task Given_InvalidOperationalUnitData_When_Validated_Then_ShouldReturnInvalid()
-    {
-        // Arrange
-        var operationalUnit = new OperationalUnit
-        {
-            ExternalId = "", // Invalid: empty
-            Name = "", // Invalid: empty
-            Location = "" // Invalid: empty
-        };
-
-        // Act
-        var result = await operationalUnit.ValidateAsync();
-
-        // Assert
-        Assert.NotEmpty(result);
-    }
-
-    /// <summary>
-    /// Tests that required fields validation works correctly.
-    /// </summary>
-    [Fact(DisplayName = "Should validate required fields")]
-    public async Task Given_EmptyRequiredFields_When_Validated_Then_ShouldHaveRequiredFieldErrors()
+    public void Given_InvalidOperationalUnitData_When_Validated_Then_ShouldReturnInvalid()
     {
         // Arrange
         var operationalUnit = new OperationalUnit
@@ -61,29 +41,51 @@ public class OperationalUnitTests
         };
 
         // Act
-        var result = await operationalUnit.ValidateAsync();
+        var result = operationalUnit.Validate();
 
         // Assert
-        Assert.NotEmpty(result);
-        var errors = result.ToList();
-        Assert.True(errors.Count >= 3); // 3 erros
+        Assert.False(result.IsValid);
+        Assert.NotEmpty(result.Errors);
+    }
+
+    /// <summary>
+    /// Tests that required fields validation works correctly.
+    /// </summary>
+    [Fact(DisplayName = "Should validate required fields")]
+    public void Given_EmptyRequiredFields_When_Validated_Then_ShouldHaveRequiredFieldErrors()
+    {
+        // Arrange
+        var operationalUnit = new OperationalUnit
+        {
+            ExternalId = "",
+            Name = "",
+            Location = ""
+        };
+
+        // Act
+        var result = operationalUnit.Validate();
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.NotEmpty(result.Errors);
+        Assert.True(result.Errors.Count() >= 3);
     }
 
     /// <summary>
     /// Tests that name validation works correctly.
     /// </summary>
     [Fact(DisplayName = "Should validate name field")]
-    public async Task Given_EmptyName_When_Validated_Then_ShouldHaveNameError()
+    public void Given_EmptyName_When_Validated_Then_ShouldHaveNameError()
     {
         // Arrange
         var operationalUnit = CommercialTransactionTestData.GenerateValidOperationalUnit();
         operationalUnit.Name = "";
 
         // Act
-        var result = await operationalUnit.ValidateAsync();
+        var result = operationalUnit.Validate();
 
         // Assert
-        Assert.NotEmpty(result);
-        Assert.Contains(result, e => e.Detail.Contains("name", StringComparison.OrdinalIgnoreCase));
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.Detail.Contains("Name", StringComparison.OrdinalIgnoreCase));
     }
 }
